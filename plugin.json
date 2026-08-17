@@ -1,0 +1,7 @@
+{
+  "name": "mermaid",
+  "version": "1.0.0",
+  "type": "parser",
+  "blockLanguage": "mermaid",
+  "main": "dist/index.js"
+}
