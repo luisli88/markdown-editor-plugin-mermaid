@@ -29,10 +29,13 @@ A-->B;
 ```
 ````
 
-Diagram colors follow MarkdownEditor's active theme (via a `%%{init: ...}%%` directive the app
-prepends per-render — see `computeMermaidStylePreset()` in the main repo's
-`document-core/plugin-block-view.tsx`); this plugin's own `mermaid.initialize()` call only sets
-the fallback palette used before that first themed render.
+Diagram colors follow MarkdownEditor's active theme via `PluginThemeContext`, the second argument
+the app passes to `render()` (see `PluginThemeContext` in `@markdown-editor/plugin-sdk`, and
+`derivePluginThemeContext()` in the main repo's `document-core/plugin-block-view.tsx`, which
+derives it from the app's active theme for every plugin block, not just Mermaid); this plugin maps
+those 8 generic slots onto Mermaid's own `themeVariables` and applies them via
+`mermaid.initialize()` before each render. Its own initial `mermaid.initialize()` call at module
+load only sets the fallback palette used when `theme` is absent.
 
 ## Develop
 

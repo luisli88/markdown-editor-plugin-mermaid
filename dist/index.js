@@ -185081,32 +185081,35 @@ mermaid_default.initialize({
   }
 });
 var renderCount = 0;
-var INIT_DIRECTIVE_PATTERN = /^%%\{init:\s*([\s\S]*?)\}%%\s*\n/;
-var ANY_INIT_DIRECTIVE_PATTERN = /%%\{\s*init(?:ialize)?\s*:[\s\S]*?\}%%/g;
-function applyInitDirective(source) {
-  const match3 = INIT_DIRECTIVE_PATTERN.exec(source);
-  if (!match3) return;
-  try {
-    const parsed = JSON.parse(match3[1]);
-    mermaid_default.initialize({ startOnLoad: false, securityLevel: "strict", ...parsed });
-  } catch {
+function themeVariablesFrom(theme) {
+  return {
+    background: theme.background,
+    primaryColor: theme.surface,
+    primaryTextColor: theme.text,
+    primaryBorderColor: theme.accent,
+    lineColor: theme.textMuted,
+    secondaryColor: theme.surfaceMuted,
+    tertiaryColor: theme.background,
+    attributeBackgroundColorOdd: theme.surface,
+    attributeBackgroundColorEven: theme.surfaceMuted
+  };
+}
+var INIT_DIRECTIVE_PATTERN = /%%\{\s*init(?:ialize)?\s*:[\s\S]*?\}%%/g;
+function stripInitDirectives(source) {
+  return source.replace(INIT_DIRECTIVE_PATTERN, "");
+}
+async function render8(source, theme) {
+  if (theme) {
+    mermaid_default.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariablesFrom(theme)
+    });
   }
-}
-function stripOtherInitDirectives(source) {
-  let sawFirst = false;
-  return source.replace(ANY_INIT_DIRECTIVE_PATTERN, (match3) => {
-    if (!sawFirst) {
-      sawFirst = true;
-      return match3;
-    }
-    return "";
-  });
-}
-async function render8(source) {
-  applyInitDirective(source);
   const { svg: svg2 } = await mermaid_default.render(
     `mermaid-diagram-${++renderCount}`,
-    stripOtherInitDirectives(source)
+    stripInitDirectives(source)
   );
   return svg2;
 }

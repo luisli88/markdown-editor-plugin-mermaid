@@ -4,12 +4,28 @@ import mermaid from "mermaid";
 // cualquier plugin de terceros (contracts/plugin-contract.md), sin camino de
 // código especial. Se empaqueta (bundlea) con la librería `mermaid` incluida
 // para que el sandbox nunca necesite red al ejecutarlo (FR-024).
+
+/**
+ * Mismo shape que `PluginThemeContext` de `@markdown-editor/plugin-sdk` — no
+ * se declara como dependencia de npm (ese paquete es privado al monorepo,
+ * sin publicar); el contrato completo está documentado en el `README.md` de
+ * `plugin-sdk` (github.com/luisli88/MarkdownEditor).
+ */
+interface PluginThemeContext {
+  mode: "light" | "dark";
+  background: string;
+  surface: string;
+  surfaceMuted: string;
+  text: string;
+  textMuted: string;
+  border: string;
+  accent: string;
+}
+
 // Paleta de marca ("Ideas El Gato Sin Botas" v1.0.0 — design/design-reference.md)
-// en vez del morado por defecto de Mermaid, para que los diagramas se sientan
-// parte del mismo sistema visual que el resto de la app — este es solo el
-// fallback inicial (antes de que un render real aplique su propio
-// `%%{init}%%`, ver `applyInitDirective` más abajo y
-// `computeMermaidStylePreset()` en `document-core/plugin-block-view.ts`).
+// en vez del morado por defecto de Mermaid — fallback usado solo cuando
+// `render()` no recibe `theme` (host sin theming, o una primera llamada
+// antes de que exista un tema activo).
 //
 // Sin `fontFamily` a propósito (revisado tras pruebas de usuario: texto
 // cortado en las tablas de ER diagram) — Mermaid mide el texto para calcular
@@ -37,66 +53,62 @@ mermaid.initialize({
 let renderCount = 0;
 
 /**
- * `%%{init: {...}}%%` como prefijo del `source` (`computeMermaidStylePreset()`,
- * `document-core/plugin-block-view.ts`) es la única forma de pedir un tema
- * *por render* sin romper el contrato de plugin (`render(source): Promise<string>`,
- * sin un segundo parámetro para pasar config aparte). Revisado tras pruebas
- * de usuario (colores de diagrama que no seguían el tema activo, texto
- * ilegible) y confirmado empíricamente: una vez que `mermaid.initialize()`
- * corrió una vez (la llamada de más abajo, al cargar este módulo), Mermaid
- * ignora en silencio cualquier `%%{init}%%` con OTRO `themeVariables` que
- * llegue después dentro del `source` de `render()` — no hay error, el
- * directive simplemente no tiene efecto. Se extrae y aplica acá a mano, vía
- * `mermaid.initialize()` directo (que sí funciona en cualquier momento,
- * confirmado), antes de cada render.
+ * Mapea los 8 slots genéricos de `PluginThemeContext` a los `themeVariables`
+ * propios de Mermaid.
+ *
+ * `background` (revisado tras pruebas de usuario: texto de ejes/títulos
+ * ilegible en diagramas XY chart/gitGraph/journey con temas oscuros) es una
+ * variable de Mermaid separada de `primaryColor`/`tertiaryColor` — varios
+ * tipos de diagrama (`xyChart.backgroundColor`, fondos de sección en
+ * gitGraph/journey) caen a ella, no a las de arriba, así que sin
+ * sobreescribirla quedaba fija en el gris claro por defecto de Mermaid
+ * (`#f4f4f4`) sin importar el tema.
+ *
+ * `attributeBackgroundColorOdd`/`Even` (ER diagram, filas de atributos de
+ * cada entidad) son otro caso igual: Mermaid las deja fijas en blanco/gris
+ * clarísimo por defecto, sin caer a ningún otro themeVariable.
  */
-const INIT_DIRECTIVE_PATTERN = /^%%\{init:\s*([\s\S]*?)\}%%\s*\n/;
+function themeVariablesFrom(theme: PluginThemeContext): Record<string, string> {
+  return {
+    background: theme.background,
+    primaryColor: theme.surface,
+    primaryTextColor: theme.text,
+    primaryBorderColor: theme.accent,
+    lineColor: theme.textMuted,
+    secondaryColor: theme.surfaceMuted,
+    tertiaryColor: theme.background,
+    attributeBackgroundColorOdd: theme.surface,
+    attributeBackgroundColorEven: theme.surfaceMuted,
+  };
+}
 
 /**
- * Cualquier `%%{init}%%`/`%%{initialize}%%` en el resto del `source` —
- * confirmado con un caso real (una nota de referencia de sintaxis Mermaid
- * que incluye, como EJEMPLO de contenido, un `%%{init: {'theme': 'forest'}}%%`
- * dentro de uno de sus diagramas): Mermaid sí procesa ese segundo directive
- * cuando arma la config efectiva de este render — a diferencia del primer
- * directive (arriba, nunca aplicado por Mermaid solo), uno que aparece
- * DESPUÉS de un `mermaid.initialize()` ya corrido sí se mezcla por encima
- * (mismo mecanismo de "config del sitio + directives del documento" de
- * Mermaid) — así que ganaba el tema del ejemplo, no el de la app. Se
- * neutraliza cualquier directive de init que no sea el primero (el nuestro,
- * ya aplicado arriba) antes de renderizar, para que el tema activo de la
- * app sea siempre el que gana, sin importar qué directive traiga el propio
- * contenido del diagrama.
+ * Cualquier `%%{init}%%`/`%%{initialize}%%` que el propio `source` del
+ * diagrama traiga (ej. una nota de referencia de sintaxis Mermaid que lo
+ * incluye como EJEMPLO de contenido — caso real observado) se neutraliza
+ * antes de renderizar: el tema de la app, aplicado abajo vía
+ * `mermaid.initialize()`, debe ganar siempre para mantenerse "congruente por
+ * construcción" con el resto de la app — nunca un directive suelto que
+ * traiga el contenido del diagrama.
  */
-const ANY_INIT_DIRECTIVE_PATTERN = /%%\{\s*init(?:ialize)?\s*:[\s\S]*?\}%%/g;
+const INIT_DIRECTIVE_PATTERN = /%%\{\s*init(?:ialize)?\s*:[\s\S]*?\}%%/g;
 
-function applyInitDirective(source: string): void {
-  const match = INIT_DIRECTIVE_PATTERN.exec(source);
-  if (!match) return;
-  try {
-    const parsed = JSON.parse(match[1] as string) as Record<string, unknown>;
-    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", ...parsed });
-  } catch {
-    // Directive malformado — se deja el tema tal como estaba de la última
-    // vez que se aplicó uno válido; no vale la pena abortar el render por esto.
+function stripInitDirectives(source: string): string {
+  return source.replace(INIT_DIRECTIVE_PATTERN, "");
+}
+
+async function render(source: string, theme?: PluginThemeContext): Promise<string> {
+  if (theme) {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariablesFrom(theme),
+    });
   }
-}
-
-function stripOtherInitDirectives(source: string): string {
-  let sawFirst = false;
-  return source.replace(ANY_INIT_DIRECTIVE_PATTERN, (match) => {
-    if (!sawFirst) {
-      sawFirst = true;
-      return match;
-    }
-    return "";
-  });
-}
-
-async function render(source: string): Promise<string> {
-  applyInitDirective(source);
   const { svg } = await mermaid.render(
     `mermaid-diagram-${++renderCount}`,
-    stripOtherInitDirectives(source),
+    stripInitDirectives(source),
   );
   return svg;
 }
