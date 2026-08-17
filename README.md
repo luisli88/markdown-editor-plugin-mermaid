@@ -37,6 +37,13 @@ those 8 generic slots onto Mermaid's own `themeVariables` and applies them via
 `mermaid.initialize()` before each render. Its own initial `mermaid.initialize()` call at module
 load only sets the fallback palette used when `theme` is absent.
 
+The `code_block` language selector and the diagram edit mode's live overlay both syntax-highlight
+`mermaid` blocks using the grammar this plugin declares via `getSyntaxGrammar()` (see
+`SyntaxGrammar` in `@markdown-editor/plugin-sdk`) — the app resolves it once when the plugin loads,
+not per render. This used to be a file hand-maintained inside the main repo
+(`document-core/src/syntax/mermaid.ts`); it now travels with the plugin, so a new plugin language
+never requires touching the app's core.
+
 ## Develop
 
 ```bash

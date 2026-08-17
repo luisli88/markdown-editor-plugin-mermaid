@@ -185113,6 +185113,31 @@ async function render8(source, theme) {
   );
   return svg2;
 }
+var syntaxGrammar = {
+  keywords: {
+    keyword: "graph flowchart sequenceDiagram classDiagram stateDiagram stateDiagram-v2 erDiagram gantt pie journey gitGraph mindmap quadrantChart timeline subgraph end participant actor loop alt else opt par and rect activate deactivate note title dateFormat section click link",
+    literal: "TD TB LR RL BT"
+  },
+  comment: { begin: "%%", end: "$" },
+  quoteStrings: true,
+  contains: [
+    {
+      // Conectores/flechas — el mismo campo semántico que un operador en un
+      // lenguaje de programación.
+      className: "operator",
+      begin: "(-->>|--?>>|<-{1,2}>|-\\.{1,2}->|={2,3}>|--[ox]|\\.\\.>|-{2,3}>|-{2,3}(?!>))"
+    },
+    {
+      // Etiqueta de nodo/arista entre corchetes/paréntesis/llaves — ej.
+      // `A[Inicio]`, `B(Proceso)`, `C{Decisión}`.
+      className: "title",
+      begin: "[[({][^\\]})]*[\\])}]"
+    }
+  ]
+};
+function getSyntaxGrammar() {
+  return syntaxGrammar;
+}
 function getExportRepresentations() {
   return [
     { id: "embedded", label: "Imagen embebida" },
@@ -185123,7 +185148,7 @@ async function exportDiagram(source, representationId) {
   if (representationId === "as-is") return { verbatim: true };
   return { svg: await render8(source) };
 }
-var index_default = { render: render8, export: exportDiagram, getExportRepresentations };
+var index_default = { render: render8, export: exportDiagram, getExportRepresentations, getSyntaxGrammar };
 export {
   index_default as default
 };

@@ -22,6 +22,15 @@ interface PluginThemeContext {
   accent: string;
 }
 
+/** Mismo shape que `SyntaxGrammar` de `@markdown-editor/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
+interface SyntaxGrammar {
+  caseInsensitive?: boolean;
+  keywords?: Record<string, string>;
+  comment?: { begin: string; end: string };
+  quoteStrings?: boolean;
+  contains?: Array<{ className: string; begin: string; end?: string }>;
+}
+
 // Paleta de marca ("Ideas El Gato Sin Botas" v1.0.0 — design/design-reference.md)
 // en vez del morado por defecto de Mermaid — fallback usado solo cuando
 // `render()` no recibe `theme` (host sin theming, o una primera llamada
@@ -113,6 +122,46 @@ async function render(source: string, theme?: PluginThemeContext): Promise<strin
   return svg;
 }
 
+/**
+ * Gramática de resaltado propia (antes vivía a mano dentro del monorepo host,
+ * en `document-core/src/syntax/mermaid.ts` — movida acá para que agregar un
+ * lenguaje nuevo de plugin no requiera tocar el core del editor). Cobertura
+ * deliberadamente acotada al subconjunto que de verdad ayuda a leer un
+ * diagrama mientras se edita — palabras clave de tipo de diagrama/dirección,
+ * flechas/conectores, comentarios (`%%`) y strings — no un parser Mermaid
+ * completo.
+ */
+const syntaxGrammar: SyntaxGrammar = {
+  keywords: {
+    keyword:
+      "graph flowchart sequenceDiagram classDiagram stateDiagram stateDiagram-v2 erDiagram " +
+      "gantt pie journey gitGraph mindmap quadrantChart timeline " +
+      "subgraph end participant actor loop alt else opt par and rect " +
+      "activate deactivate note title dateFormat section click link",
+    literal: "TD TB LR RL BT",
+  },
+  comment: { begin: "%%", end: "$" },
+  quoteStrings: true,
+  contains: [
+    {
+      // Conectores/flechas — el mismo campo semántico que un operador en un
+      // lenguaje de programación.
+      className: "operator",
+      begin: "(-->>|--?>>|<-{1,2}>|-\\.{1,2}->|={2,3}>|--[ox]|\\.\\.>|-{2,3}>|-{2,3}(?!>))",
+    },
+    {
+      // Etiqueta de nodo/arista entre corchetes/paréntesis/llaves — ej.
+      // `A[Inicio]`, `B(Proceso)`, `C{Decisión}`.
+      className: "title",
+      begin: "[[({][^\\]})]*[\\])}]",
+    },
+  ],
+};
+
+function getSyntaxGrammar(): SyntaxGrammar {
+  return syntaxGrammar;
+}
+
 /** US8/FR-022: representaciones de exportación que este plugin ofrece — el panel de exportación las descubre dinámicamente (`export-panel.ts`). */
 function getExportRepresentations(): Array<{ id: string; label: string }> {
   return [
@@ -130,4 +179,4 @@ async function exportDiagram(
   return { svg: await render(source) };
 }
 
-export default { render, export: exportDiagram, getExportRepresentations };
+export default { render, export: exportDiagram, getExportRepresentations, getSyntaxGrammar };
