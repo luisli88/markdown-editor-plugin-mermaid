@@ -185115,6 +185115,133 @@ async function render8(source, theme) {
   );
   return svg2;
 }
+var EDITOR_DEBOUNCE_MS = 300;
+function mountEditor(options2) {
+  const theme = options2.theme;
+  const colors2 = {
+    surface: theme?.surface ?? "#f0f2fa",
+    surfaceMuted: theme?.surfaceMuted ?? "#ecf0f8",
+    text: theme?.text ?? "#0f1520",
+    border: theme?.border ?? "#334a99"
+  };
+  const style3 = document.createElement("style");
+  style3.textContent = `
+    html, body { margin: 0; height: 100%; background: transparent; }
+    .mermaid-edit-mode {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 12px;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 4px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+    }
+    .mermaid-edit-code-pane {
+      background: ${colors2.surfaceMuted};
+      border: 2px solid ${colors2.border};
+      border-radius: 8px;
+      min-height: 160px;
+    }
+    .mermaid-edit-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 160px;
+      box-sizing: border-box;
+      resize: vertical;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: ${colors2.text};
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      tab-size: 4;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      padding: 16px;
+    }
+    .mermaid-edit-preview-pane {
+      background: ${colors2.surface};
+      border-radius: 8px;
+      padding: 16px;
+      overflow: auto;
+    }
+    .mermaid-edit-preview-pane.error {
+      background: #3a1d1d;
+    }
+    .mermaid-edit-error-panel {
+      color: #ef4444;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+  `;
+  document.head.appendChild(style3);
+  const root4 = document.createElement("div");
+  root4.className = "mermaid-edit-mode";
+  const codePane = document.createElement("div");
+  codePane.className = "mermaid-edit-code-pane";
+  const textarea = document.createElement("textarea");
+  textarea.className = "mermaid-edit-textarea";
+  textarea.value = options2.initialSource;
+  textarea.spellcheck = false;
+  codePane.appendChild(textarea);
+  const previewPane = document.createElement("div");
+  previewPane.className = "mermaid-edit-preview-pane";
+  root4.append(codePane, previewPane);
+  options2.container.appendChild(root4);
+  textarea.focus();
+  let debounceTimer;
+  let renderToken = 0;
+  function renderPreview(source) {
+    const currentToken = ++renderToken;
+    render8(source, theme).then((svg2) => {
+      if (currentToken !== renderToken) return;
+      previewPane.classList.remove("error");
+      previewPane.innerHTML = svg2;
+    }).catch((error3) => {
+      if (currentToken !== renderToken) return;
+      previewPane.classList.add("error");
+      previewPane.innerHTML = "";
+      const panel = document.createElement("div");
+      panel.className = "mermaid-edit-error-panel";
+      panel.textContent = error3 instanceof Error ? error3.message : String(error3);
+      previewPane.appendChild(panel);
+    });
+  }
+  function scheduleRender() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => renderPreview(textarea.value), EDITOR_DEBOUNCE_MS);
+  }
+  renderPreview(options2.initialSource);
+  textarea.addEventListener("input", scheduleRender);
+  function commit2() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    options2.onCommit(textarea.value);
+  }
+  textarea.addEventListener("keydown", (event3) => {
+    if (event3.key === "Escape") {
+      event3.preventDefault();
+      commit2();
+    } else if (event3.key === "Enter" && (event3.metaKey || event3.ctrlKey)) {
+      event3.preventDefault();
+      commit2();
+    } else if (event3.key === "Tab") {
+      event3.preventDefault();
+      const { selectionStart, selectionEnd, value: value2 } = textarea;
+      textarea.value = `${value2.slice(0, selectionStart)}	${value2.slice(selectionEnd)}`;
+      textarea.selectionStart = selectionStart + 1;
+      textarea.selectionEnd = selectionStart + 1;
+      scheduleRender();
+    }
+  });
+  textarea.addEventListener("blur", commit2);
+  return {
+    destroy() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+    }
+  };
+}
 var syntaxGrammar = {
   keywords: {
     keyword: "graph flowchart sequenceDiagram classDiagram stateDiagram stateDiagram-v2 erDiagram gantt pie journey gitGraph mindmap quadrantChart timeline subgraph end participant actor loop alt else opt par and rect activate deactivate note title dateFormat section click link",
@@ -185150,7 +185277,13 @@ async function exportDiagram(source, representationId) {
   if (representationId === "as-is") return { verbatim: true };
   return { svg: await render8(source) };
 }
-var index_default = { render: render8, export: exportDiagram, getExportRepresentations, getSyntaxGrammar };
+var index_default = {
+  render: render8,
+  export: exportDiagram,
+  getExportRepresentations,
+  getSyntaxGrammar,
+  mountEditor
+};
 export {
   index_default as default
 };

@@ -133,6 +133,176 @@ async function render(source: string, theme?: PluginThemeContext): Promise<strin
   return svg;
 }
 
+/** Mismo shape que `PluginEditorSession` de `@markdown-editor/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
+interface PluginEditorSession {
+  destroy(): void;
+}
+
+/** Mismo shape que `PluginEditorMountOptions` de `@markdown-editor/plugin-sdk`. */
+interface PluginEditorMountOptions {
+  container: HTMLElement;
+  initialSource: string;
+  theme?: PluginThemeContext;
+  onCommit: (newSource: string) => void;
+}
+
+const EDITOR_DEBOUNCE_MS = 300;
+
+/**
+ * v1 de `mountEditor` — reproduce el layout del editor genérico del host
+ * (split apilado, código arriba/preview debajo, mismo debounce/atajos de
+ * commit: Escape/Cmd+Enter/blur confirman, Tab inserta un tab real), ahora
+ * dueño de su propio DOM/CSS dentro de este sandbox en vez del `editor.css`
+ * del host.
+ *
+ * Sin overlay de resaltado de sintaxis (a diferencia del genérico): ese
+ * truco (`diagram-edit-mode.ts`, host) depende de tokens de spacing/fuente
+ * que `PluginThemeContext` deliberadamente no expone (son detalle del
+ * chrome del host, no del tema) — reimplementar un mini-resaltador acá sería
+ * una duplicación desproporcionada para esta primera versión; un
+ * `<textarea>` con texto real alcanza para editar cómodo.
+ */
+function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
+  const theme = options.theme;
+  const colors = {
+    surface: theme?.surface ?? "#f0f2fa",
+    surfaceMuted: theme?.surfaceMuted ?? "#ecf0f8",
+    text: theme?.text ?? "#0f1520",
+    border: theme?.border ?? "#334a99",
+  };
+
+  const style = document.createElement("style");
+  style.textContent = `
+    html, body { margin: 0; height: 100%; background: transparent; }
+    .mermaid-edit-mode {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 12px;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 4px;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+    }
+    .mermaid-edit-code-pane {
+      background: ${colors.surfaceMuted};
+      border: 2px solid ${colors.border};
+      border-radius: 8px;
+      min-height: 160px;
+    }
+    .mermaid-edit-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 160px;
+      box-sizing: border-box;
+      resize: vertical;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: ${colors.text};
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      tab-size: 4;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      padding: 16px;
+    }
+    .mermaid-edit-preview-pane {
+      background: ${colors.surface};
+      border-radius: 8px;
+      padding: 16px;
+      overflow: auto;
+    }
+    .mermaid-edit-preview-pane.error {
+      background: #3a1d1d;
+    }
+    .mermaid-edit-error-panel {
+      color: #ef4444;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const root = document.createElement("div");
+  root.className = "mermaid-edit-mode";
+
+  const codePane = document.createElement("div");
+  codePane.className = "mermaid-edit-code-pane";
+  const textarea = document.createElement("textarea");
+  textarea.className = "mermaid-edit-textarea";
+  textarea.value = options.initialSource;
+  textarea.spellcheck = false;
+  codePane.appendChild(textarea);
+
+  const previewPane = document.createElement("div");
+  previewPane.className = "mermaid-edit-preview-pane";
+
+  root.append(codePane, previewPane);
+  options.container.appendChild(root);
+  textarea.focus();
+
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let renderToken = 0;
+
+  function renderPreview(source: string): void {
+    const currentToken = ++renderToken;
+    render(source, theme)
+      .then((svg) => {
+        if (currentToken !== renderToken) return;
+        previewPane.classList.remove("error");
+        previewPane.innerHTML = svg;
+      })
+      .catch((error: unknown) => {
+        if (currentToken !== renderToken) return;
+        previewPane.classList.add("error");
+        previewPane.innerHTML = "";
+        const panel = document.createElement("div");
+        panel.className = "mermaid-edit-error-panel";
+        panel.textContent = error instanceof Error ? error.message : String(error);
+        previewPane.appendChild(panel);
+      });
+  }
+
+  function scheduleRender(): void {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => renderPreview(textarea.value), EDITOR_DEBOUNCE_MS);
+  }
+
+  renderPreview(options.initialSource);
+  textarea.addEventListener("input", scheduleRender);
+
+  function commit(): void {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    options.onCommit(textarea.value);
+  }
+
+  textarea.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      commit();
+    } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      commit();
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      const { selectionStart, selectionEnd, value } = textarea;
+      textarea.value = `${value.slice(0, selectionStart)}\t${value.slice(selectionEnd)}`;
+      textarea.selectionStart = selectionStart + 1;
+      textarea.selectionEnd = selectionStart + 1;
+      scheduleRender();
+    }
+  });
+  textarea.addEventListener("blur", commit);
+
+  return {
+    destroy(): void {
+      if (debounceTimer) clearTimeout(debounceTimer);
+    },
+  };
+}
+
 /**
  * Gramática de resaltado propia (antes vivía a mano dentro del monorepo host,
  * en `document-core/src/syntax/mermaid.ts` — movida acá para que agregar un
@@ -190,4 +360,10 @@ async function exportDiagram(
   return { svg: await render(source) };
 }
 
-export default { render, export: exportDiagram, getExportRepresentations, getSyntaxGrammar };
+export default {
+  render,
+  export: exportDiagram,
+  getExportRepresentations,
+  getSyntaxGrammar,
+  mountEditor,
+};
