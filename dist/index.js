@@ -185069,6 +185069,9 @@ var mermaid_default = mermaid;
 // src/styles.css
 var styles_default23 = "/*\n * Un <svg> embebido en HTML es `display: inline` por defecto (misma\n * herencia que una <img>) \u2014 sin esto se alinea con el texto circundante en\n * vez de quedar centrado como bloque. El host no sabe que este plugin en\n * particular devuelve un <svg> (recibe un string de HTML gen\xE9rico), as\xED que\n * esta presentaci\xF3n por defecto es responsabilidad del propio plugin.\n */\nsvg {\n  display: block;\n  margin: auto;\n}\n";
 
+// src/editor-styles.css
+var editor_styles_default = 'html,\nbody {\n  margin: 0;\n  height: 100%;\n  background: transparent;\n}\n\n.mermaid-edit-mode {\n  display: grid;\n  grid-template-rows: auto auto;\n  gap: 12px;\n  height: 100%;\n  box-sizing: border-box;\n  padding: 4px;\n  font-family:\n    -apple-system,\n    "Segoe UI",\n    sans-serif;\n}\n\n.mermaid-edit-code-pane {\n  background: var(--mermaid-editor-surface-muted);\n  border: 2px solid var(--mermaid-editor-border);\n  border-radius: 8px;\n  min-height: 160px;\n}\n\n.mermaid-edit-textarea {\n  width: 100%;\n  height: 100%;\n  min-height: 160px;\n  box-sizing: border-box;\n  resize: vertical;\n  border: none;\n  outline: none;\n  background: transparent;\n  color: var(--mermaid-editor-text);\n  font-family: "SFMono-Regular", Menlo, Consolas, monospace;\n  font-size: 14px;\n  line-height: 1.5;\n  tab-size: 4;\n  white-space: pre-wrap;\n  overflow-wrap: break-word;\n  padding: 16px;\n}\n\n.mermaid-edit-preview-pane {\n  background: var(--mermaid-editor-surface);\n  border-radius: 8px;\n  padding: 16px;\n  overflow: auto;\n}\n\n.mermaid-edit-preview-pane.error {\n  background: #3a1d1d;\n}\n\n.mermaid-edit-error-panel {\n  color: #ef4444;\n  font-family: monospace;\n  font-size: 13px;\n  white-space: pre-wrap;\n}\n';
+
 // src/index.ts
 mermaid_default.initialize({
   startOnLoad: false,
@@ -185124,67 +185127,15 @@ async function render8(source, theme) {
 var EDITOR_DEBOUNCE_MS = 300;
 function mountEditor(options2) {
   const theme = options2.theme;
-  const colors2 = {
-    surface: theme?.surface ?? "#f0f2fa",
-    surfaceMuted: theme?.surfaceMuted ?? "#ecf0f8",
-    text: theme?.text ?? "#0f1520",
-    border: theme?.border ?? "#334a99"
-  };
   const style3 = document.createElement("style");
-  style3.textContent = `
-    html, body { margin: 0; height: 100%; background: transparent; }
-    .mermaid-edit-mode {
-      display: grid;
-      grid-template-rows: auto auto;
-      gap: 12px;
-      height: 100%;
-      box-sizing: border-box;
-      padding: 4px;
-      font-family: -apple-system, "Segoe UI", sans-serif;
-    }
-    .mermaid-edit-code-pane {
-      background: ${colors2.surfaceMuted};
-      border: 2px solid ${colors2.border};
-      border-radius: 8px;
-      min-height: 160px;
-    }
-    .mermaid-edit-textarea {
-      width: 100%;
-      height: 100%;
-      min-height: 160px;
-      box-sizing: border-box;
-      resize: vertical;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: ${colors2.text};
-      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      tab-size: 4;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-      padding: 16px;
-    }
-    .mermaid-edit-preview-pane {
-      background: ${colors2.surface};
-      border-radius: 8px;
-      padding: 16px;
-      overflow: auto;
-    }
-    .mermaid-edit-preview-pane.error {
-      background: #3a1d1d;
-    }
-    .mermaid-edit-error-panel {
-      color: #ef4444;
-      font-family: monospace;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-  `;
+  style3.textContent = editor_styles_default;
   document.head.appendChild(style3);
   const root4 = document.createElement("div");
   root4.className = "mermaid-edit-mode";
+  root4.style.setProperty("--mermaid-editor-surface", theme?.surface ?? "#f0f2fa");
+  root4.style.setProperty("--mermaid-editor-surface-muted", theme?.surfaceMuted ?? "#ecf0f8");
+  root4.style.setProperty("--mermaid-editor-text", theme?.text ?? "#0f1520");
+  root4.style.setProperty("--mermaid-editor-border", theme?.border ?? "#334a99");
   const codePane = document.createElement("div");
   codePane.className = "mermaid-edit-code-pane";
   const textarea = document.createElement("textarea");

@@ -3,6 +3,7 @@ import mermaid from "mermaid";
 // CSS como string — mismo mecanismo que usa `markdown-editor-plugin-katex`
 // para su propio `katex/dist/katex.min.css`.
 import svgStyles from "./styles.css";
+import editorStyles from "./editor-styles.css";
 
 // Plugin de primera parte (research.md R4/R9) — mismo contrato exacto que
 // cualquier plugin de terceros (contracts/plugin-contract.md), sin camino de
@@ -177,69 +178,22 @@ const EDITOR_DEBOUNCE_MS = 300;
  */
 function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
   const theme = options.theme;
-  const colors = {
-    surface: theme?.surface ?? "#f0f2fa",
-    surfaceMuted: theme?.surfaceMuted ?? "#ecf0f8",
-    text: theme?.text ?? "#0f1520",
-    border: theme?.border ?? "#334a99",
-  };
 
   const style = document.createElement("style");
-  style.textContent = `
-    html, body { margin: 0; height: 100%; background: transparent; }
-    .mermaid-edit-mode {
-      display: grid;
-      grid-template-rows: auto auto;
-      gap: 12px;
-      height: 100%;
-      box-sizing: border-box;
-      padding: 4px;
-      font-family: -apple-system, "Segoe UI", sans-serif;
-    }
-    .mermaid-edit-code-pane {
-      background: ${colors.surfaceMuted};
-      border: 2px solid ${colors.border};
-      border-radius: 8px;
-      min-height: 160px;
-    }
-    .mermaid-edit-textarea {
-      width: 100%;
-      height: 100%;
-      min-height: 160px;
-      box-sizing: border-box;
-      resize: vertical;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: ${colors.text};
-      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      tab-size: 4;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-      padding: 16px;
-    }
-    .mermaid-edit-preview-pane {
-      background: ${colors.surface};
-      border-radius: 8px;
-      padding: 16px;
-      overflow: auto;
-    }
-    .mermaid-edit-preview-pane.error {
-      background: #3a1d1d;
-    }
-    .mermaid-edit-error-panel {
-      color: #ef4444;
-      font-family: monospace;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-  `;
+  style.textContent = editorStyles;
   document.head.appendChild(style);
 
   const root = document.createElement("div");
   root.className = "mermaid-edit-mode";
+  // `editor-styles.css` referencia estas custom properties en vez de
+  // colores fijos — es la única parte de la hoja que depende de `theme`
+  // (recibido en runtime, no algo que un archivo `.css` estático pueda
+  // tener adentro), así que viaja aparte, seteada acá en vez de
+  // interpolada dentro del CSS.
+  root.style.setProperty("--mermaid-editor-surface", theme?.surface ?? "#f0f2fa");
+  root.style.setProperty("--mermaid-editor-surface-muted", theme?.surfaceMuted ?? "#ecf0f8");
+  root.style.setProperty("--mermaid-editor-text", theme?.text ?? "#0f1520");
+  root.style.setProperty("--mermaid-editor-border", theme?.border ?? "#334a99");
 
   const codePane = document.createElement("div");
   codePane.className = "mermaid-edit-code-pane";
