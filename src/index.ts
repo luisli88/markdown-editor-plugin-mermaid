@@ -1,4 +1,8 @@
 import mermaid from "mermaid";
+// `--loader:.css=text` (ver package.json `build`) da el contenido crudo del
+// CSS como string — mismo mecanismo que usa `markdown-editor-plugin-katex`
+// para su propio `katex/dist/katex.min.css`.
+import svgStyles from "./styles.css";
 
 // Plugin de primera parte (research.md R4/R9) — mismo contrato exacto que
 // cualquier plugin de terceros (contracts/plugin-contract.md), sin camino de
@@ -117,17 +121,12 @@ function stripInitDirectives(source: string): string {
 }
 
 /**
- * Un `<svg>` embebido en HTML es `display: inline` por defecto (misma
- * herencia que una `<img>`) — sin esto se alineaba con el texto circundante
- * en vez de quedar centrado como bloque. El host no sabe que este plugin en
- * particular devuelve un `<svg>` (recibe un string de HTML genérico), así
- * que esta presentación por defecto es responsabilidad del propio plugin,
- * no del host. Vive en `getStylesheet()` — el host la inyecta como un
- * `<style>` propio, aparte del HTML que devuelve `render()` (nunca mezclada
- * en ese string), dentro del shadow root donde monta este plugin.
+ * `styles.css` — el host la inyecta como un `<style>` propio, aparte del
+ * HTML que devuelve `render()` (nunca mezclada en ese string), dentro del
+ * shadow root donde monta este plugin.
  */
 function getStylesheet(): string {
-  return "svg{display:block;margin:auto;}";
+  return svgStyles;
 }
 
 async function render(source: string, theme?: PluginThemeContext): Promise<string> {

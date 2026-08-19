@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --outfile=dist/index.js",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --loader:.css=text --outfile=dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

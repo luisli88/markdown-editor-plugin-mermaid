@@ -185066,6 +185066,9 @@ var mermaid = {
 };
 var mermaid_default = mermaid;
 
+// src/styles.css
+var styles_default23 = "/*\n * Un <svg> embebido en HTML es `display: inline` por defecto (misma\n * herencia que una <img>) \u2014 sin esto se alinea con el texto circundante en\n * vez de quedar centrado como bloque. El host no sabe que este plugin en\n * particular devuelve un <svg> (recibe un string de HTML gen\xE9rico), as\xED que\n * esta presentaci\xF3n por defecto es responsabilidad del propio plugin.\n */\nsvg {\n  display: block;\n  margin: auto;\n}\n";
+
 // src/index.ts
 mermaid_default.initialize({
   startOnLoad: false,
@@ -185100,7 +185103,7 @@ function stripInitDirectives(source) {
   return source.replace(INIT_DIRECTIVE_PATTERN, "");
 }
 function getStylesheet() {
-  return "svg{display:block;margin:auto;}";
+  return styles_default23;
 }
 async function render8(source, theme) {
   if (theme) {

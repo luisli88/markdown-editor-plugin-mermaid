@@ -1,0 +1,11 @@
+/*
+ * Un <svg> embebido en HTML es `display: inline` por defecto (misma
+ * herencia que una <img>) — sin esto se alinea con el texto circundante en
+ * vez de quedar centrado como bloque. El host no sabe que este plugin en
+ * particular devuelve un <svg> (recibe un string de HTML genérico), así que
+ * esta presentación por defecto es responsabilidad del propio plugin.
+ */
+svg {
+  display: block;
+  margin: auto;
+}
