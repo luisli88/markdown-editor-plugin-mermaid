@@ -45,10 +45,20 @@ interface SyntaxGrammar {
 // principal) usen anchos distintos, y el texto termina desbordando su caja.
 // Sin este campo, cae al default de Mermaid
 // (`"trebuchet ms", verdana, arial, sans-serif`), disponible en ambos lados.
+// `htmlLabels: false` (default de Mermaid es `true`) — con `true`, cada
+// etiqueta de texto se emite como `<foreignObject><div>...</div></foreignObject>`
+// dentro del SVG. El host (`plugin-block-view.tsx`/`diagram-edit-mode.ts`)
+// sanitiza el `render()` de cualquier plugin con DOMPurify antes de
+// insertarlo en su propio documento — DOMPurify vacía el contenido de
+// `foreignObject` por diseño (protección deliberada contra un vector de XSS
+// conocido, sin override seguro), así que con `htmlLabels: true` el texto de
+// cada etiqueta desaparecería. `false` hace que Mermaid emita `<text>`/`<tspan>`
+// SVG nativo en su lugar, que DOMPurify preserva sin problema.
 mermaid.initialize({
   startOnLoad: false,
   securityLevel: "strict",
   theme: "base",
+  htmlLabels: false,
   themeVariables: {
     primaryColor: "#F0F2FA",
     primaryTextColor: "#0F1520",
@@ -112,6 +122,7 @@ async function render(source: string, theme?: PluginThemeContext): Promise<strin
       startOnLoad: false,
       securityLevel: "strict",
       theme: "base",
+      htmlLabels: false,
       themeVariables: themeVariablesFrom(theme),
     });
   }

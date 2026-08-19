@@ -185071,6 +185071,7 @@ mermaid_default.initialize({
   startOnLoad: false,
   securityLevel: "strict",
   theme: "base",
+  htmlLabels: false,
   themeVariables: {
     primaryColor: "#F0F2FA",
     primaryTextColor: "#0F1520",
@@ -185104,6 +185105,7 @@ async function render8(source, theme) {
       startOnLoad: false,
       securityLevel: "strict",
       theme: "base",
+      htmlLabels: false,
       themeVariables: themeVariablesFrom(theme)
     });
   }
