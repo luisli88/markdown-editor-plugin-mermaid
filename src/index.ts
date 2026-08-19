@@ -116,6 +116,28 @@ function stripInitDirectives(source: string): string {
   return source.replace(INIT_DIRECTIVE_PATTERN, "");
 }
 
+/**
+ * Un `<svg>` embebido en HTML es `display: inline` por defecto (misma
+ * herencia que una `<img>`) — sin esto se alineaba con el texto circundante
+ * en vez de quedar centrado como bloque. El host no sabe que este plugin en
+ * particular devuelve un `<svg>` (recibe un string de HTML genérico), así
+ * que esta presentación por defecto es responsabilidad del propio plugin,
+ * no del host — antes vivía como una regla del lado del host que asumía la
+ * etiqueta (`editor.css`), un workaround de cuando embeber un `<style>`
+ * propio todavía no era seguro (sin shadow DOM, un `<style>` de un plugin
+ * se filtraba al resto de la app). Como primer hijo del `<svg>` raíz es
+ * posición válida en SVG y sobrevive `sanitizePluginHtml` del host sin
+ * ajustes ahí (a diferencia de un `<style>` como hermano de nivel superior
+ * antes de cualquier otro contenido, que HTML5 reubica a un `<head>`
+ * implícito que el host descarta — no aplica acá, el `<style>` queda
+ * anidado dentro del propio `<svg>`).
+ */
+const ROOT_SVG_TAG_PATTERN = /^(<svg[^>]*>)/;
+
+function withDefaultSvgStyle(svg: string): string {
+  return svg.replace(ROOT_SVG_TAG_PATTERN, "$1<style>svg{display:block;margin:auto;}</style>");
+}
+
 async function render(source: string, theme?: PluginThemeContext): Promise<string> {
   if (theme) {
     mermaid.initialize({
@@ -130,7 +152,7 @@ async function render(source: string, theme?: PluginThemeContext): Promise<strin
     `mermaid-diagram-${++renderCount}`,
     stripInitDirectives(source),
   );
-  return svg;
+  return withDefaultSvgStyle(svg);
 }
 
 /** Mismo shape que `PluginEditorSession` de `@markdown-editor/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */

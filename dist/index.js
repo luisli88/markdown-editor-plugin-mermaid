@@ -185099,6 +185099,10 @@ var INIT_DIRECTIVE_PATTERN = /%%\{\s*init(?:ialize)?\s*:[\s\S]*?\}%%/g;
 function stripInitDirectives(source) {
   return source.replace(INIT_DIRECTIVE_PATTERN, "");
 }
+var ROOT_SVG_TAG_PATTERN = /^(<svg[^>]*>)/;
+function withDefaultSvgStyle(svg2) {
+  return svg2.replace(ROOT_SVG_TAG_PATTERN, "$1<style>svg{display:block;margin:auto;}</style>");
+}
 async function render8(source, theme) {
   if (theme) {
     mermaid_default.initialize({
@@ -185113,7 +185117,7 @@ async function render8(source, theme) {
     `mermaid-diagram-${++renderCount}`,
     stripInitDirectives(source)
   );
-  return svg2;
+  return withDefaultSvgStyle(svg2);
 }
 var EDITOR_DEBOUNCE_MS = 300;
 function mountEditor(options2) {
