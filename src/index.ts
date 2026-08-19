@@ -122,20 +122,12 @@ function stripInitDirectives(source: string): string {
  * en vez de quedar centrado como bloque. El host no sabe que este plugin en
  * particular devuelve un `<svg>` (recibe un string de HTML genérico), así
  * que esta presentación por defecto es responsabilidad del propio plugin,
- * no del host — antes vivía como una regla del lado del host que asumía la
- * etiqueta (`editor.css`), un workaround de cuando embeber un `<style>`
- * propio todavía no era seguro (sin shadow DOM, un `<style>` de un plugin
- * se filtraba al resto de la app). Como primer hijo del `<svg>` raíz es
- * posición válida en SVG y sobrevive `sanitizePluginHtml` del host sin
- * ajustes ahí (a diferencia de un `<style>` como hermano de nivel superior
- * antes de cualquier otro contenido, que HTML5 reubica a un `<head>`
- * implícito que el host descarta — no aplica acá, el `<style>` queda
- * anidado dentro del propio `<svg>`).
+ * no del host. Vive en `getStylesheet()` — el host la inyecta como un
+ * `<style>` propio, aparte del HTML que devuelve `render()` (nunca mezclada
+ * en ese string), dentro del shadow root donde monta este plugin.
  */
-const ROOT_SVG_TAG_PATTERN = /^(<svg[^>]*>)/;
-
-function withDefaultSvgStyle(svg: string): string {
-  return svg.replace(ROOT_SVG_TAG_PATTERN, "$1<style>svg{display:block;margin:auto;}</style>");
+function getStylesheet(): string {
+  return "svg{display:block;margin:auto;}";
 }
 
 async function render(source: string, theme?: PluginThemeContext): Promise<string> {
@@ -152,7 +144,7 @@ async function render(source: string, theme?: PluginThemeContext): Promise<strin
     `mermaid-diagram-${++renderCount}`,
     stripInitDirectives(source),
   );
-  return withDefaultSvgStyle(svg);
+  return svg;
 }
 
 /** Mismo shape que `PluginEditorSession` de `@markdown-editor/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
@@ -388,4 +380,5 @@ export default {
   getExportRepresentations,
   getSyntaxGrammar,
   mountEditor,
+  getStylesheet,
 };
