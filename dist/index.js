@@ -186628,7 +186628,7 @@ var mermaid_default = mermaid;
 var styles_default23 = "/*\n * Un <svg> embebido en HTML es `display: inline` por defecto (misma\n * herencia que una <img>) \u2014 sin esto se alinea con el texto circundante en\n * vez de quedar centrado como bloque. El host no sabe que este plugin en\n * particular devuelve un <svg> (recibe un string de HTML gen\xE9rico), as\xED que\n * esta presentaci\xF3n por defecto es responsabilidad del propio plugin.\n */\nsvg {\n  display: block;\n  margin: auto;\n}\n";
 
 // src/editor-styles.css
-var editor_styles_default = 'html,\nbody {\n  margin: 0;\n  height: 100%;\n  background: transparent;\n}\n\n.mermaid-edit-mode {\n  display: grid;\n  grid-template-rows: auto auto;\n  gap: 12px;\n  height: 100%;\n  box-sizing: border-box;\n  padding: 4px;\n  font-family:\n    -apple-system,\n    "Segoe UI",\n    sans-serif;\n}\n\n.mermaid-edit-code-pane {\n  position: relative;\n  background: var(--mermaid-editor-surface-muted);\n  border: 2px solid var(--mermaid-editor-border);\n  border-radius: 8px;\n  min-height: 160px;\n}\n\n/* Overlay de resaltado, detr\xE1s del textarea (texto transparente) \u2014 mismo\n   truco que `diagram-edit-mode.ts` del host: debe calzar exactamente con la\n   caja del textarea (padding/fuente/line-height/word-wrap) para que el color\n   quede alineado con el texto real que el usuario tipea encima. */\n.mermaid-edit-highlight {\n  position: absolute;\n  inset: 0;\n  margin: 0;\n  box-sizing: border-box;\n  padding: 16px;\n  overflow: hidden;\n  pointer-events: none;\n  color: var(--mermaid-editor-text);\n  font-family: "SFMono-Regular", Menlo, Consolas, monospace;\n  font-size: 14px;\n  line-height: 1.5;\n  tab-size: 4;\n  white-space: pre-wrap;\n  overflow-wrap: break-word;\n}\n\n.mermaid-edit-highlight code {\n  font: inherit;\n}\n\n.mermaid-edit-textarea {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  min-height: 160px;\n  box-sizing: border-box;\n  resize: vertical;\n  border: none;\n  outline: none;\n  background: transparent;\n  color: transparent;\n  caret-color: var(--mermaid-editor-text);\n  font-family: "SFMono-Regular", Menlo, Consolas, monospace;\n  font-size: 14px;\n  line-height: 1.5;\n  tab-size: 4;\n  white-space: pre-wrap;\n  overflow-wrap: break-word;\n  padding: 16px;\n}\n\n.mermaid-edit-textarea::selection {\n  /* El texto en s\xED es transparente \u2014 la selecci\xF3n nativa necesita su propio\n     fondo visible para no desaparecer contra el overlay de abajo. */\n  background: rgba(51, 74, 153, 0.25);\n}\n\n/* Paleta de resaltado propia (fija, no derivada de `PluginThemeContext`: ese\n   contrato solo expone 8 slots gen\xE9ricos de chrome, sin colores de sintaxis\n   \u2014 mismo criterio que el resto de este archivo, ej. el rojo fijo de\n   `.mermaid-edit-error-panel`). Clases `hljs-*` est\xE1ndar, mismo esquema que\n   `highlightSourceToHtml()` produce v\xEDa `highlight.js`. */\n.hljs-keyword {\n  color: #334a99;\n  font-weight: 600;\n}\n\n.hljs-literal {\n  color: #3d6ea8;\n}\n\n.hljs-comment {\n  color: #8a94a8;\n  font-style: italic;\n}\n\n.hljs-string {\n  color: #3f7d4f;\n}\n\n.hljs-operator {\n  color: #8a6e28;\n}\n\n.hljs-title {\n  color: #6a4a94;\n}\n\n.mermaid-edit-preview-pane {\n  background: var(--mermaid-editor-surface);\n  border-radius: 8px;\n  padding: 16px;\n  overflow: auto;\n}\n\n.mermaid-edit-preview-pane.error {\n  background: #3a1d1d;\n}\n\n.mermaid-edit-error-panel {\n  color: #ef4444;\n  font-family: monospace;\n  font-size: 13px;\n  white-space: pre-wrap;\n}\n';
+var editor_styles_default = 'html,\nbody {\n  margin: 0;\n  height: 100%;\n  background: transparent;\n}\n\n.mermaid-edit-mode {\n  display: grid;\n  grid-template-rows: auto auto;\n  gap: 12px;\n  height: 100%;\n  box-sizing: border-box;\n  padding: 4px;\n  font-family:\n    -apple-system,\n    "Segoe UI",\n    sans-serif;\n}\n\n.mermaid-edit-code-pane {\n  position: relative;\n  background: var(--mermaid-editor-surface-muted);\n  border: 2px solid var(--mermaid-editor-border);\n  border-radius: 8px;\n  min-height: 160px;\n}\n\n/* Overlay de resaltado, detr\xE1s del textarea (texto transparente) \u2014 mismo\n   truco que `diagram-edit-mode.ts` del host: debe calzar exactamente con la\n   caja del textarea (padding/fuente/line-height/word-wrap) para que el color\n   quede alineado con el texto real que el usuario tipea encima. */\n.mermaid-edit-highlight {\n  position: absolute;\n  inset: 0;\n  margin: 0;\n  box-sizing: border-box;\n  padding: 16px;\n  overflow: hidden;\n  pointer-events: none;\n  color: var(--mermaid-editor-text);\n  font-family: "SFMono-Regular", Menlo, Consolas, monospace;\n  font-size: 14px;\n  line-height: 1.5;\n  tab-size: 4;\n  white-space: pre-wrap;\n  overflow-wrap: break-word;\n}\n\n.mermaid-edit-highlight code {\n  font: inherit;\n}\n\n.mermaid-edit-textarea {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  min-height: 160px;\n  box-sizing: border-box;\n  resize: vertical;\n  border: none;\n  outline: none;\n  background: transparent;\n  color: transparent;\n  caret-color: var(--mermaid-editor-text);\n  font-family: "SFMono-Regular", Menlo, Consolas, monospace;\n  font-size: 14px;\n  line-height: 1.5;\n  tab-size: 4;\n  white-space: pre-wrap;\n  overflow-wrap: break-word;\n  padding: 16px;\n}\n\n.mermaid-edit-textarea::selection {\n  /* El texto en s\xED es transparente \u2014 la selecci\xF3n nativa necesita su propio\n     fondo visible para no desaparecer contra el overlay de abajo. */\n  background: rgba(51, 74, 153, 0.25);\n}\n\n/* Paleta de resaltado propia (fija, no derivada de `PluginThemeContext`: ese\n   contrato solo expone 8 slots gen\xE9ricos de chrome, sin colores de sintaxis\n   \u2014 mismo criterio que el resto de este archivo, ej. el rojo fijo de\n   `.mermaid-edit-error-panel`). Clases `hljs-*` est\xE1ndar, mismo esquema que\n   `highlightSourceToHtml()` produce v\xEDa `highlight.js`. */\n.hljs-keyword {\n  color: #334a99;\n  font-weight: 600;\n}\n\n.hljs-literal {\n  color: #3d6ea8;\n}\n\n.hljs-comment {\n  color: #8a94a8;\n  font-style: italic;\n}\n\n.hljs-string {\n  color: #3f7d4f;\n}\n\n.hljs-operator {\n  color: #8a6e28;\n}\n\n.hljs-title {\n  color: #6a4a94;\n}\n\n.hljs-number {\n  color: #b8621b;\n}\n\n.mermaid-edit-preview-pane {\n  background: var(--mermaid-editor-surface);\n  border-radius: 8px;\n  padding: 16px;\n  overflow: auto;\n}\n\n.mermaid-edit-preview-pane.error {\n  background: #3a1d1d;\n}\n\n.mermaid-edit-error-panel {\n  color: #ef4444;\n  font-family: monospace;\n  font-size: 13px;\n  white-space: pre-wrap;\n}\n';
 
 // src/index.ts
 mermaid_default.initialize({
@@ -186685,23 +186685,37 @@ async function render8(source, theme) {
 var EDITOR_DEBOUNCE_MS = 300;
 var syntaxGrammar = {
   keywords: {
-    keyword: "graph flowchart sequenceDiagram classDiagram stateDiagram stateDiagram-v2 erDiagram gantt pie journey gitGraph mindmap quadrantChart timeline subgraph end participant actor loop alt else opt par and rect activate deactivate note title dateFormat section click link",
-    literal: "TD TB LR RL BT"
+    keyword: (
+      // Declaración de tipo de diagrama.
+      "graph flowchart flowchart-elk sequenceDiagram classDiagram classDiagram-v2 stateDiagram stateDiagram-v2 erDiagram gantt pie journey gitGraph mindmap quadrantChart timeline requirementDiagram sankey-beta xychart-beta block-beta packet-beta C4Context C4Container C4Component C4Dynamic C4Deployment subgraph end direction participant actor activate deactivate note over left right of loop alt else opt par and critical option break rect autonumber box create destroy links properties details class interface namespace state as hide empty description one-or-zero one-or-many zero-or-more zero-or-one only dateFormat axisFormat includes excludes todayMarker tickInterval weekday section done active crit milestone after before showData x-axis y-axis quadrant-1 quadrant-2 quadrant-3 quadrant-4 commit branch checkout merge cherry-pick tag reset order type id parent title click link style classDef linkStyle callback cssClass"
+    ),
+    literal: "TD TB LR RL BT true false"
   },
   comment: { begin: "%%", end: "$" },
   quoteStrings: true,
   contains: [
     {
-      // Conectores/flechas — el mismo campo semántico que un operador en un
-      // lenguaje de programación.
+      // Conectores/flechas de flowchart y mensajes de sequenceDiagram — el
+      // mismo campo semántico que un operador en un lenguaje de programación.
       className: "operator",
-      begin: "(-->>|--?>>|<-{1,2}>|-\\.{1,2}->|={2,3}>|--[ox]|\\.\\.>|-{2,3}>|-{2,3}(?!>))"
+      begin: "(<?-{1,2}\\.{1,2}->>?|<?={2,3}>|-{1,2}>>|--?>>|<-{1,2}>|--[ox]|\\.\\.>|-{2,3}>|-{2,3}(?!>)|-x|--x|-\\)|--\\)|<\\|--|--\\|>|\\*--|--\\*|o--|--o|\\.\\.\\|>|<\\|\\.\\.|\\.\\.>|<\\.\\.)"
     },
     {
       // Etiqueta de nodo/arista entre corchetes/paréntesis/llaves — ej.
       // `A[Inicio]`, `B(Proceso)`, `C{Decisión}`.
       className: "title",
       begin: "[[({][^\\]})]*[\\])}]"
+    },
+    {
+      // Etiqueta de arista sin comillas — ej. `A -->|etiqueta| B`.
+      className: "string",
+      begin: "\\|[^|\\n]*\\|"
+    },
+    {
+      // Números y duraciones (gantt: `5d`, `2w`; fechas: `2024-01-01`;
+      // porcentajes de pie).
+      className: "number",
+      begin: "\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d+(\\.\\d+)?[dwmy]?%?\\b"
     }
   ]
 };

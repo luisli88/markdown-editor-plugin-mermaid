@@ -166,35 +166,73 @@ const EDITOR_DEBOUNCE_MS = 300;
 /**
  * Gramática de resaltado propia (antes vivía a mano dentro del monorepo host,
  * en `document-core/src/syntax/mermaid.ts` — movida acá para que agregar un
- * lenguaje nuevo de plugin no requiera tocar el core del editor). Cobertura
- * deliberadamente acotada al subconjunto que de verdad ayuda a leer un
- * diagrama mientras se edita — palabras clave de tipo de diagrama/dirección,
- * flechas/conectores, comentarios (`%%`) y strings — no un parser Mermaid
- * completo.
+ * lenguaje nuevo de plugin no requiera tocar el core del editor). Cubre las
+ * palabras clave propias de cada tipo de diagrama que Mermaid soporta
+ * (flowchart, sequence, class, state, ER, gantt, pie, journey, gitGraph,
+ * mindmap, timeline, quadrant, requirement, C4), directivas comunes
+ * (`click`/`style`/`classDef`/`linkStyle`), números/duraciones, y las
+ * variantes de flecha/relación de cada diagrama (conectores de flowchart,
+ * mensajes de secuencia, relaciones de clase) — no un parser Mermaid
+ * completo (eso solo lo tiene el propio Mermaid), pero sí una cobertura real
+ * de lo que aparece en la práctica.
  */
 const syntaxGrammar: SyntaxGrammar = {
   keywords: {
     keyword:
-      "graph flowchart sequenceDiagram classDiagram stateDiagram stateDiagram-v2 erDiagram " +
-      "gantt pie journey gitGraph mindmap quadrantChart timeline " +
-      "subgraph end participant actor loop alt else opt par and rect " +
-      "activate deactivate note title dateFormat section click link",
-    literal: "TD TB LR RL BT",
+      // Declaración de tipo de diagrama.
+      "graph flowchart flowchart-elk sequenceDiagram classDiagram classDiagram-v2 " +
+      "stateDiagram stateDiagram-v2 erDiagram gantt pie journey gitGraph mindmap " +
+      "quadrantChart timeline requirementDiagram sankey-beta xychart-beta " +
+      "block-beta packet-beta C4Context C4Container C4Component C4Dynamic C4Deployment " +
+      // Flowchart.
+      "subgraph end direction " +
+      // Sequence diagram.
+      "participant actor activate deactivate note over left right of loop alt " +
+      "else opt par and critical option break rect autonumber box create destroy " +
+      "links properties details " +
+      // Class diagram / state diagram.
+      "class interface namespace state as hide empty description " +
+      // ER diagram.
+      "one-or-zero one-or-many zero-or-more zero-or-one only " +
+      // Gantt.
+      "dateFormat axisFormat includes excludes todayMarker tickInterval weekday " +
+      "section done active crit milestone after before " +
+      // Pie / journey / timeline / quadrant.
+      "showData x-axis y-axis quadrant-1 quadrant-2 quadrant-3 quadrant-4 " +
+      // GitGraph.
+      "commit branch checkout merge cherry-pick tag reset order type id parent " +
+      // Directivas comunes a varios diagramas.
+      "title click link style classDef linkStyle callback cssClass",
+    literal: "TD TB LR RL BT true false",
   },
   comment: { begin: "%%", end: "$" },
   quoteStrings: true,
   contains: [
     {
-      // Conectores/flechas — el mismo campo semántico que un operador en un
-      // lenguaje de programación.
+      // Conectores/flechas de flowchart y mensajes de sequenceDiagram — el
+      // mismo campo semántico que un operador en un lenguaje de programación.
       className: "operator",
-      begin: "(-->>|--?>>|<-{1,2}>|-\\.{1,2}->|={2,3}>|--[ox]|\\.\\.>|-{2,3}>|-{2,3}(?!>))",
+      begin:
+        "(<?-{1,2}\\.{1,2}->>?|<?={2,3}>|-{1,2}>>|--?>>|<-{1,2}>|--[ox]|\\.\\.>|-{2,3}>|-{2,3}(?!>)|-x|--x|-\\)|--\\)|" +
+        // Relaciones de classDiagram: herencia/composición/agregación/realización.
+        "<\\|--|--\\|>|\\*--|--\\*|o--|--o|\\.\\.\\|>|<\\|\\.\\.|\\.\\.>|<\\.\\.)",
     },
     {
       // Etiqueta de nodo/arista entre corchetes/paréntesis/llaves — ej.
       // `A[Inicio]`, `B(Proceso)`, `C{Decisión}`.
       className: "title",
       begin: "[[({][^\\]})]*[\\])}]",
+    },
+    {
+      // Etiqueta de arista sin comillas — ej. `A -->|etiqueta| B`.
+      className: "string",
+      begin: "\\|[^|\\n]*\\|",
+    },
+    {
+      // Números y duraciones (gantt: `5d`, `2w`; fechas: `2024-01-01`;
+      // porcentajes de pie).
+      className: "number",
+      begin: "\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d+(\\.\\d+)?[dwmy]?%?\\b",
     },
   ],
 };

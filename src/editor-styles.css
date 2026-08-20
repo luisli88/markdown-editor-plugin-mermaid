@@ -109,6 +109,10 @@ body {
   color: #6a4a94;
 }
 
+.hljs-number {
+  color: #b8621b;
+}
+
 .mermaid-edit-preview-pane {
   background: var(--mermaid-editor-surface);
   border-radius: 8px;
