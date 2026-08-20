@@ -186747,6 +186747,7 @@ function mountEditor(options2) {
   textarea.className = "mermaid-edit-textarea";
   textarea.value = options2.initialSource;
   textarea.spellcheck = false;
+  textarea.autofocus = true;
   codePane.append(highlightPre, textarea);
   const previewPane = document.createElement("div");
   previewPane.className = "mermaid-edit-preview-pane";

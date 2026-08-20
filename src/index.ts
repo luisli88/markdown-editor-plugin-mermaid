@@ -283,6 +283,18 @@ function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
   textarea.className = "mermaid-edit-textarea";
   textarea.value = options.initialSource;
   textarea.spellcheck = false;
+  // `autofocus` (atributo declarativo) en vez de solo `textarea.focus()`
+  // imperativo: este `mountEditor()` corre recién después de un round-trip
+  // async (mensaje "mount" del host + `import()` de este módulo desde un
+  // blob), fuera de cualquier gesto de usuario síncrono — verificado que
+  // WebKit, dentro de un iframe sandboxeado, bloquea en silencio un
+  // `element.focus()` disparado ahí (activeElement se quedaba en `<body>`
+  // pese a que el iframe SÍ tenía foco de ventana). `autofocus` es un
+  // mecanismo distinto: lo procesa el propio navegador al insertar el nodo,
+  // no gateado detrás de "hay un gesto de usuario corriendo ahora" — solo
+  // requiere el permiso de Permissions Policy (`allow="autofocus"` en el
+  // `<iframe>`, ver `plugin-editor-sandbox.ts`).
+  textarea.autofocus = true;
   codePane.append(highlightPre, textarea);
 
   const previewPane = document.createElement("div");
@@ -290,6 +302,9 @@ function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
 
   root.append(codePane, previewPane);
   options.container.appendChild(root);
+  // Redundante junto con `autofocus` de arriba (no debería hacer falta si
+  // ese mecanismo aplica), pero sin costo si ya está enfocado — cubre
+  // cualquier caso donde `autofocus` no re-dispare por algún motivo.
   textarea.focus();
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
