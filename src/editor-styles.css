@@ -19,13 +19,40 @@ body {
 }
 
 .mermaid-edit-code-pane {
+  position: relative;
   background: var(--mermaid-editor-surface-muted);
   border: 2px solid var(--mermaid-editor-border);
   border-radius: 8px;
   min-height: 160px;
 }
 
+/* Overlay de resaltado, detrás del textarea (texto transparente) — mismo
+   truco que `diagram-edit-mode.ts` del host: debe calzar exactamente con la
+   caja del textarea (padding/fuente/line-height/word-wrap) para que el color
+   quede alineado con el texto real que el usuario tipea encima. */
+.mermaid-edit-highlight {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  box-sizing: border-box;
+  padding: 16px;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--mermaid-editor-text);
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  tab-size: 4;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.mermaid-edit-highlight code {
+  font: inherit;
+}
+
 .mermaid-edit-textarea {
+  position: relative;
   width: 100%;
   height: 100%;
   min-height: 160px;
@@ -34,7 +61,8 @@ body {
   border: none;
   outline: none;
   background: transparent;
-  color: var(--mermaid-editor-text);
+  color: transparent;
+  caret-color: var(--mermaid-editor-text);
   font-family: "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 14px;
   line-height: 1.5;
@@ -42,6 +70,43 @@ body {
   white-space: pre-wrap;
   overflow-wrap: break-word;
   padding: 16px;
+}
+
+.mermaid-edit-textarea::selection {
+  /* El texto en sí es transparente — la selección nativa necesita su propio
+     fondo visible para no desaparecer contra el overlay de abajo. */
+  background: rgba(51, 74, 153, 0.25);
+}
+
+/* Paleta de resaltado propia (fija, no derivada de `PluginThemeContext`: ese
+   contrato solo expone 8 slots genéricos de chrome, sin colores de sintaxis
+   — mismo criterio que el resto de este archivo, ej. el rojo fijo de
+   `.mermaid-edit-error-panel`). Clases `hljs-*` estándar, mismo esquema que
+   `highlightSourceToHtml()` produce vía `highlight.js`. */
+.hljs-keyword {
+  color: #334a99;
+  font-weight: 600;
+}
+
+.hljs-literal {
+  color: #3d6ea8;
+}
+
+.hljs-comment {
+  color: #8a94a8;
+  font-style: italic;
+}
+
+.hljs-string {
+  color: #3f7d4f;
+}
+
+.hljs-operator {
+  color: #8a6e28;
+}
+
+.hljs-title {
+  color: #6a4a94;
 }
 
 .mermaid-edit-preview-pane {

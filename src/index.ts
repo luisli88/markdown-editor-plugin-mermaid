@@ -1,3 +1,4 @@
+import hljs from "highlight.js/lib/core";
 import mermaid from "mermaid";
 // `--loader:.css=text` (ver package.json `build`) da el contenido crudo del
 // CSS como string — mismo mecanismo que usa `markdown-editor-plugin-katex`
@@ -163,114 +164,6 @@ interface PluginEditorMountOptions {
 const EDITOR_DEBOUNCE_MS = 300;
 
 /**
- * v1 de `mountEditor` — reproduce el layout del editor genérico del host
- * (split apilado, código arriba/preview debajo, mismo debounce/atajos de
- * commit: Escape/Cmd+Enter/blur confirman, Tab inserta un tab real), ahora
- * dueño de su propio DOM/CSS dentro de este sandbox en vez del `editor.css`
- * del host.
- *
- * Sin overlay de resaltado de sintaxis (a diferencia del genérico): ese
- * truco (`diagram-edit-mode.ts`, host) depende de tokens de spacing/fuente
- * que `PluginThemeContext` deliberadamente no expone (son detalle del
- * chrome del host, no del tema) — reimplementar un mini-resaltador acá sería
- * una duplicación desproporcionada para esta primera versión; un
- * `<textarea>` con texto real alcanza para editar cómodo.
- */
-function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
-  const theme = options.theme;
-
-  const style = document.createElement("style");
-  style.textContent = editorStyles;
-  document.head.appendChild(style);
-
-  const root = document.createElement("div");
-  root.className = "mermaid-edit-mode";
-  // `editor-styles.css` referencia estas custom properties en vez de
-  // colores fijos — es la única parte de la hoja que depende de `theme`
-  // (recibido en runtime, no algo que un archivo `.css` estático pueda
-  // tener adentro), así que viaja aparte, seteada acá en vez de
-  // interpolada dentro del CSS.
-  root.style.setProperty("--mermaid-editor-surface", theme?.surface ?? "#f0f2fa");
-  root.style.setProperty("--mermaid-editor-surface-muted", theme?.surfaceMuted ?? "#ecf0f8");
-  root.style.setProperty("--mermaid-editor-text", theme?.text ?? "#0f1520");
-  root.style.setProperty("--mermaid-editor-border", theme?.border ?? "#334a99");
-
-  const codePane = document.createElement("div");
-  codePane.className = "mermaid-edit-code-pane";
-  const textarea = document.createElement("textarea");
-  textarea.className = "mermaid-edit-textarea";
-  textarea.value = options.initialSource;
-  textarea.spellcheck = false;
-  codePane.appendChild(textarea);
-
-  const previewPane = document.createElement("div");
-  previewPane.className = "mermaid-edit-preview-pane";
-
-  root.append(codePane, previewPane);
-  options.container.appendChild(root);
-  textarea.focus();
-
-  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  let renderToken = 0;
-
-  function renderPreview(source: string): void {
-    const currentToken = ++renderToken;
-    render(source, theme)
-      .then((svg) => {
-        if (currentToken !== renderToken) return;
-        previewPane.classList.remove("error");
-        previewPane.innerHTML = svg;
-      })
-      .catch((error: unknown) => {
-        if (currentToken !== renderToken) return;
-        previewPane.classList.add("error");
-        previewPane.innerHTML = "";
-        const panel = document.createElement("div");
-        panel.className = "mermaid-edit-error-panel";
-        panel.textContent = error instanceof Error ? error.message : String(error);
-        previewPane.appendChild(panel);
-      });
-  }
-
-  function scheduleRender(): void {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => renderPreview(textarea.value), EDITOR_DEBOUNCE_MS);
-  }
-
-  renderPreview(options.initialSource);
-  textarea.addEventListener("input", scheduleRender);
-
-  function commit(): void {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    options.onCommit(textarea.value);
-  }
-
-  textarea.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      commit();
-    } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      commit();
-    } else if (event.key === "Tab") {
-      event.preventDefault();
-      const { selectionStart, selectionEnd, value } = textarea;
-      textarea.value = `${value.slice(0, selectionStart)}\t${value.slice(selectionEnd)}`;
-      textarea.selectionStart = selectionStart + 1;
-      textarea.selectionEnd = selectionStart + 1;
-      scheduleRender();
-    }
-  });
-  textarea.addEventListener("blur", commit);
-
-  return {
-    destroy(): void {
-      if (debounceTimer) clearTimeout(debounceTimer);
-    },
-  };
-}
-
-/**
  * Gramática de resaltado propia (antes vivía a mano dentro del monorepo host,
  * en `document-core/src/syntax/mermaid.ts` — movida acá para que agregar un
  * lenguaje nuevo de plugin no requiera tocar el core del editor). Cobertura
@@ -308,6 +201,167 @@ const syntaxGrammar: SyntaxGrammar = {
 
 function getSyntaxGrammar(): SyntaxGrammar {
   return syntaxGrammar;
+}
+
+/**
+ * Traduce `syntaxGrammar` (datos serializables, `getSyntaxGrammar()`) a la
+ * función `(hljs) => Language` real que `highlight.js` necesita — mismo
+ * mecanismo que usa el host para cualquier plugin (`translateGrammar`,
+ * `document-core/src/syntax-highlighting.ts`), reimplementado acá porque el
+ * overlay de resaltado de `mountEditor()` (más abajo) corre DENTRO de este
+ * sandbox, nunca en el host, así que no puede reusar esa función.
+ */
+hljs.registerLanguage("mermaid", (hljsInstance) => ({
+  case_insensitive: syntaxGrammar.caseInsensitive ?? false,
+  ...(syntaxGrammar.keywords ? { keywords: syntaxGrammar.keywords } : {}),
+  contains: [
+    ...(syntaxGrammar.comment
+      ? [hljsInstance.COMMENT(syntaxGrammar.comment.begin, syntaxGrammar.comment.end)]
+      : []),
+    ...(syntaxGrammar.quoteStrings ? [hljsInstance.QUOTE_STRING_MODE] : []),
+    ...(syntaxGrammar.contains ?? []).map((rule) => ({
+      className: rule.className,
+      begin: new RegExp(rule.begin),
+      ...(rule.end ? { end: new RegExp(rule.end) } : {}),
+    })),
+  ],
+}));
+
+const HTML_ESCAPE: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;" };
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>]/g, (ch) => HTML_ESCAPE[ch] ?? ch);
+}
+
+/** Overlay de resaltado del editor propio — mismo `hljs.highlight()` que usa el host, misma técnica de `<pre><code>` detrás de un `<textarea>` con texto transparente (`diagram-edit-mode.ts`, host, para el editor genérico). */
+function highlightSourceToHtml(source: string): string {
+  return `${hljs.highlight(source, { language: "mermaid" }).value}\n`;
+}
+
+/**
+ * v1 de `mountEditor` — reproduce el layout del editor genérico del host
+ * (split apilado, código arriba/preview debajo, mismo debounce/atajos de
+ * commit: Escape/Cmd+Enter/blur confirman, Tab inserta un tab real), ahora
+ * dueño de su propio DOM/CSS dentro de este sandbox en vez del `editor.css`
+ * del host.
+ *
+ * Con overlay de resaltado propio (`highlightSourceToHtml`, arriba) — mismo
+ * `<pre><code>` detrás de un `<textarea>` de texto transparente que usa el
+ * editor genérico del host (`diagram-edit-mode.ts`), pero con la propia
+ * gramática/paleta del plugin en vez de depender de tokens que
+ * `PluginThemeContext` no expone (son detalle del chrome del host, no del
+ * tema).
+ */
+function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
+  const theme = options.theme;
+
+  const style = document.createElement("style");
+  style.textContent = editorStyles;
+  document.head.appendChild(style);
+
+  const root = document.createElement("div");
+  root.className = "mermaid-edit-mode";
+  // `editor-styles.css` referencia estas custom properties en vez de
+  // colores fijos — es la única parte de la hoja que depende de `theme`
+  // (recibido en runtime, no algo que un archivo `.css` estático pueda
+  // tener adentro), así que viaja aparte, seteada acá en vez de
+  // interpolada dentro del CSS.
+  root.style.setProperty("--mermaid-editor-surface", theme?.surface ?? "#f0f2fa");
+  root.style.setProperty("--mermaid-editor-surface-muted", theme?.surfaceMuted ?? "#ecf0f8");
+  root.style.setProperty("--mermaid-editor-text", theme?.text ?? "#0f1520");
+  root.style.setProperty("--mermaid-editor-border", theme?.border ?? "#334a99");
+
+  const codePane = document.createElement("div");
+  codePane.className = "mermaid-edit-code-pane";
+
+  const highlightPre = document.createElement("pre");
+  highlightPre.className = "mermaid-edit-highlight";
+  highlightPre.setAttribute("aria-hidden", "true");
+  const highlightCode = document.createElement("code");
+  highlightPre.appendChild(highlightCode);
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "mermaid-edit-textarea";
+  textarea.value = options.initialSource;
+  textarea.spellcheck = false;
+  codePane.append(highlightPre, textarea);
+
+  const previewPane = document.createElement("div");
+  previewPane.className = "mermaid-edit-preview-pane";
+
+  root.append(codePane, previewPane);
+  options.container.appendChild(root);
+  textarea.focus();
+
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let renderToken = 0;
+
+  function renderPreview(source: string): void {
+    const currentToken = ++renderToken;
+    render(source, theme)
+      .then((svg) => {
+        if (currentToken !== renderToken) return;
+        previewPane.classList.remove("error");
+        previewPane.innerHTML = svg;
+      })
+      .catch((error: unknown) => {
+        if (currentToken !== renderToken) return;
+        previewPane.classList.add("error");
+        previewPane.innerHTML = "";
+        const panel = document.createElement("div");
+        panel.className = "mermaid-edit-error-panel";
+        panel.textContent = error instanceof Error ? error.message : String(error);
+        previewPane.appendChild(panel);
+      });
+  }
+
+  function updateHighlight(source: string): void {
+    highlightCode.innerHTML = highlightSourceToHtml(source);
+  }
+
+  function syncHighlightScroll(): void {
+    highlightPre.scrollTop = textarea.scrollTop;
+    highlightPre.scrollLeft = textarea.scrollLeft;
+  }
+
+  function scheduleRender(): void {
+    updateHighlight(textarea.value);
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => renderPreview(textarea.value), EDITOR_DEBOUNCE_MS);
+  }
+
+  renderPreview(options.initialSource);
+  updateHighlight(options.initialSource);
+  textarea.addEventListener("input", scheduleRender);
+  textarea.addEventListener("scroll", syncHighlightScroll);
+
+  function commit(): void {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    options.onCommit(textarea.value);
+  }
+
+  textarea.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      commit();
+    } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      commit();
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      const { selectionStart, selectionEnd, value } = textarea;
+      textarea.value = `${value.slice(0, selectionStart)}\t${value.slice(selectionEnd)}`;
+      textarea.selectionStart = selectionStart + 1;
+      textarea.selectionEnd = selectionStart + 1;
+      scheduleRender();
+    }
+  });
+  textarea.addEventListener("blur", commit);
+
+  return {
+    destroy(): void {
+      if (debounceTimer) clearTimeout(debounceTimer);
+    },
+  };
 }
 
 /** US8/FR-022: representaciones de exportación que este plugin ofrece — el panel de exportación las descubre dinámicamente (`export-panel.ts`). */
