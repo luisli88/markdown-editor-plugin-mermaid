@@ -187229,6 +187229,9 @@ function mountEditor(options2) {
     }
   };
 }
+function getInsertMenuItem() {
+  return { label: "Diagrama", defaultSource: "graph TD;\n    A --> B;\n" };
+}
 function getExportRepresentations() {
   return [
     { id: "embedded", label: "Imagen embebida" },
@@ -187244,6 +187247,7 @@ var index_default = {
   export: exportDiagram,
   getExportRepresentations,
   getSyntaxGrammar,
+  getInsertMenuItem,
   mountEditor,
   getStylesheet
 };

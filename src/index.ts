@@ -417,6 +417,16 @@ function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
   };
 }
 
+/**
+ * §7 diseño de contribuciones de plugin: ítem del menú/toolbar nativo
+ * "Insertar" — inserta un bloque nuevo después del actual con esta plantilla
+ * mínima en vez de arrancar vacío (un flowchart vacío no renderiza nada útil
+ * como primer vistazo).
+ */
+function getInsertMenuItem(): { label: string; defaultSource: string } {
+  return { label: "Diagrama", defaultSource: "graph TD;\n    A --> B;\n" };
+}
+
 /** US8/FR-022: representaciones de exportación que este plugin ofrece — el panel de exportación las descubre dinámicamente (`export-panel.ts`). */
 function getExportRepresentations(): Array<{ id: string; label: string }> {
   return [
@@ -439,6 +449,7 @@ export default {
   export: exportDiagram,
   getExportRepresentations,
   getSyntaxGrammar,
+  getInsertMenuItem,
   mountEditor,
   getStylesheet,
 };
