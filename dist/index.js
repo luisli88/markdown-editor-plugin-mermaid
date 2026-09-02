@@ -187230,7 +187230,7 @@ function mountEditor(options2) {
   };
 }
 function getInsertMenuItem() {
-  return { label: "Diagrama", defaultSource: "graph TD;\n    A --> B;\n" };
+  return { label: "Diagrama", defaultSource: "graph TD;\n    A --> B;\n", icon: "chart.pie" };
 }
 function getExportRepresentations() {
   return [

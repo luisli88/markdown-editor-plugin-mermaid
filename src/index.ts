@@ -421,10 +421,13 @@ function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
  * §7 diseño de contribuciones de plugin: ítem del menú/toolbar nativo
  * "Insertar" — inserta un bloque nuevo después del actual con esta plantilla
  * mínima en vez de arrancar vacío (un flowchart vacío no renderiza nada útil
- * como primer vistazo).
+ * como primer vistazo). `icon`: nombre de SF Symbol que el host usa para el
+ * botón (`@markdown-editor/plugin-sdk`) — un diagrama de torta es la
+ * metáfora visual más reconocible para "diagrama" en el set de símbolos de
+ * Apple.
  */
-function getInsertMenuItem(): { label: string; defaultSource: string } {
-  return { label: "Diagrama", defaultSource: "graph TD;\n    A --> B;\n" };
+function getInsertMenuItem(): { label: string; defaultSource: string; icon: string } {
+  return { label: "Diagrama", defaultSource: "graph TD;\n    A --> B;\n", icon: "chart.pie" };
 }
 
 /** US8/FR-022: representaciones de exportación que este plugin ofrece — el panel de exportación las descubre dinámicamente (`export-panel.ts`). */
