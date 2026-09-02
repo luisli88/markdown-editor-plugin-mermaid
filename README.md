@@ -1,16 +1,16 @@
 # markdown-editor-plugin-mermaid
 
-The [MarkdownEditor](https://github.com/luisli88/MarkdownEditor) plugin that renders
+The [PluMark](https://github.com/luisli88/PluMark) plugin that renders
 ` ```mermaid ` blocks as diagrams using [Mermaid](https://mermaid.js.org/). Ships with the app by
 default (fetched at build time, not vendored — see `main` repo's `plugins/bootstrap.ts`), but
-installs the same way any third-party plugin does: paste this repo's URL into MarkdownEditor's
+installs the same way any third-party plugin does: paste this repo's URL into PluMark's
 plugin install dialog.
 
 Built from [markdown-editor-plugin-template](https://github.com/luisli88/markdown-editor-plugin-template).
 
 ## Install
 
-In MarkdownEditor, open plugin management and paste:
+In PluMark, open plugin management and paste:
 
 ```text
 https://github.com/luisli88/markdown-editor-plugin-mermaid
@@ -29,8 +29,8 @@ A-->B;
 ```
 ````
 
-Diagram colors follow MarkdownEditor's active theme via `PluginThemeContext`, the second argument
-the app passes to `render()` (see `PluginThemeContext` in `@markdown-editor/plugin-sdk`, and
+Diagram colors follow PluMark's active theme via `PluginThemeContext`, the second argument
+the app passes to `render()` (see `PluginThemeContext` in `@plumark/plugin-sdk`, and
 `derivePluginThemeContext()` in the main repo's `document-core/plugin-block-view.tsx`, which
 derives it from the app's active theme for every plugin block, not just Mermaid); this plugin maps
 those 8 generic slots onto Mermaid's own `themeVariables` and applies them via
@@ -39,7 +39,7 @@ load only sets the fallback palette used when `theme` is absent.
 
 The `code_block` language selector and the diagram edit mode's live overlay both syntax-highlight
 `mermaid` blocks using the grammar this plugin declares via `getSyntaxGrammar()` (see
-`SyntaxGrammar` in `@markdown-editor/plugin-sdk`) — the app resolves it once when the plugin loads,
+`SyntaxGrammar` in `@plumark/plugin-sdk`) — the app resolves it once when the plugin loads,
 not per render. This used to be a file hand-maintained inside the main repo
 (`document-core/src/syntax/mermaid.ts`); it now travels with the plugin, so a new plugin language
 never requires touching the app's core.

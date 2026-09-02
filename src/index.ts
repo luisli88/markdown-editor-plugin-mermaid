@@ -12,10 +12,10 @@ import editorStyles from "./editor-styles.css";
 // para que el sandbox nunca necesite red al ejecutarlo (FR-024).
 
 /**
- * Mismo shape que `PluginThemeContext` de `@markdown-editor/plugin-sdk` — no
+ * Mismo shape que `PluginThemeContext` de `@plumark/plugin-sdk` — no
  * se declara como dependencia de npm (ese paquete es privado al monorepo,
  * sin publicar); el contrato completo está documentado en el `README.md` de
- * `plugin-sdk` (github.com/luisli88/MarkdownEditor).
+ * `plugin-sdk` (github.com/luisli88/PluMark).
  */
 interface PluginThemeContext {
   mode: "light" | "dark";
@@ -28,7 +28,7 @@ interface PluginThemeContext {
   accent: string;
 }
 
-/** Mismo shape que `SyntaxGrammar` de `@markdown-editor/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
+/** Mismo shape que `SyntaxGrammar` de `@plumark/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
 interface SyntaxGrammar {
   caseInsensitive?: boolean;
   keywords?: Record<string, string>;
@@ -148,12 +148,12 @@ async function render(source: string, theme?: PluginThemeContext): Promise<strin
   return svg;
 }
 
-/** Mismo shape que `PluginEditorSession` de `@markdown-editor/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
+/** Mismo shape que `PluginEditorSession` de `@plumark/plugin-sdk` — ver nota de `PluginThemeContext` arriba sobre por qué no se importa el paquete. */
 interface PluginEditorSession {
   destroy(): void;
 }
 
-/** Mismo shape que `PluginEditorMountOptions` de `@markdown-editor/plugin-sdk`. */
+/** Mismo shape que `PluginEditorMountOptions` de `@plumark/plugin-sdk`. */
 interface PluginEditorMountOptions {
   container: HTMLElement;
   initialSource: string;
@@ -422,7 +422,7 @@ function mountEditor(options: PluginEditorMountOptions): PluginEditorSession {
  * "Insertar" — inserta un bloque nuevo después del actual con esta plantilla
  * mínima en vez de arrancar vacío (un flowchart vacío no renderiza nada útil
  * como primer vistazo). `icon`: nombre de SF Symbol que el host usa para el
- * botón (`@markdown-editor/plugin-sdk`) — un diagrama de torta es la
+ * botón (`@plumark/plugin-sdk`) — un diagrama de torta es la
  * metáfora visual más reconocible para "diagrama" en el set de símbolos de
  * Apple.
  */
